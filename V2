@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Dec 24 12:21:52 2024
+
+@author: sacha
+"""
+
+''' This script s intended to provide solutions in dectecting arbitrage opportunity 
+using the Call-Put parity for European Options'''
+import math
+import pandas as pd
+import matplotlib.pyplot as plt
+
+#dictionary that will contain user inputs
+
+def parametersinputs():
+    print("Please enter the following parameters:")
+    market_call_price = float(input("Enter the market call price: "))
+    market_put_price = float(input("Enter the market put price: "))
+    S_O = float(input("Enter the current stock price (S_0): "))
+    S_K = float(input("Enter the strike price (K): "))
+    rf = float(input("Enter the risk-free rate (e.g., 0.10 for 10%): "))
+    T = float(input("Enter the time to maturity (T, in years): "))
+    D = float(input("Enter the dividend yield (e.g., 0 for no dividends): "))
+
+    return {
+        'market_call_price': market_call_price,
+        'market_put_price': market_put_price,
+        'S_O': S_O,
+        'S_K': S_K,
+        'rf': rf,
+        'T': T,
+        'D': D
+    }
+
+# Function to calculate the syntethic put price
+def calculate_synthetic_put(parameters):
+    # adjusted spot price with dividend
+    S_0_adjusted = parameters['S_O'] * math.exp(-parameters['D'] * parameters['T'])
+    # PV of K value (K * exp^(-rT))
+    pv_K = parameters['S_K'] * math.exp(-parameters['rf'] * parameters['T'])
+    # compute the syntethic put
+    synthetic_put = parameters['market_call_price'] - S_0_adjusted + pv_K
+    return synthetic_put
+
+# funtion to compute difference between market and synthetic put
+def putdiff(synthetic_put, market_put):
+    pricediff = synthetic_put - market_put
+    print(f' The calculated price difference is : {pricediff}')
+    return pricediff
+
+#plot components of synthetic put
+def plot_synthetic_components(parameters, synthetic_put):
+    S_0_adjusted = parameters['S_O'] * math.exp(-parameters['D'] * parameters['T'])
+    pv_K = parameters['S_K'] * math.exp(-parameters['rf'] * parameters['T'])
+
+    components = ['Call Price', 'Adjusted Spot Price', 'PV of Strike']
+    values = [parameters['market_call_price'], -S_0_adjusted, pv_K]
+
+    plt.barh(components, values, color=['green', 'red', 'purple'])
+    plt.title('Synthetic Put Price Components')
+    plt.xlabel('Value Contribution')
+    plt.axvline(0, color='black', linewidth=0.8, linestyle='--')
+    plt.show()
+
+#plot payoffs
+def plot_payoff(parameters):
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    # Parameters
+    K = parameters['S_K']  # Strike price
+    rf = parameters['rf']  # Risk-free rate
+    T = parameters['T']    # Time to maturity
+    market_call_price = parameters['market_call_price']
+    S_T = np.linspace(0, 2 * K, 500)  # Range of stock prices at maturity
+
+    # Market put payoff
+    market_put_payoff = np.maximum(K - S_T, 0)
+
+    # Synthetic put payoff components
+    long_call = np.maximum(S_T - K, 0)
+    short_stock = -S_T
+    long_bond = K * math.exp(-rf * T)
+
+    # Synthetic put payoff
+    synthetic_put_payoff = long_call + short_stock + long_bond
+
+    # Plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(S_T, market_put_payoff, label='Market Put Payoff', linestyle='-', color='blue')
+    plt.plot(S_T, synthetic_put_payoff, label='Synthetic Put Payoff', linestyle='--', color='orange')
+    plt.axhline(0, color='black', linewidth=0.8, linestyle='--')
+    plt.title('Synthetic vs. Market Put Payoffs')
+    plt.xlabel('Stock Price at Maturity (S_T)')
+    plt.ylabel('Payoff')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+#functon to detect opportunity and provide recommendations
+def recommend(parameters):
+    #Compute syntethic put by callng function
+   synthetic_put = calculate_synthetic_put(parameters)
+   # Get the market put price
+   market_put = parameters['market_put_price']
+   # Calculate price difference by calling function
+   pricediff = putdiff(synthetic_put, market_put)
+   
+
+   #==========Data Frames creation==========
+   # Create a DataFrame for input parameters
+   input_df = pd.DataFrame.from_dict(parameters, orient='index', columns=['Value'])
+   print("\n===== Input Parameters =====")
+   print(input_df)
+   print()
+   
+   #data frame for the elements computed
+   data = {
+        'Synthetic Put Price': [synthetic_put],
+        'Market Put Price': [market_put],
+        'Price Difference': [pricediff]}
+   details_df = pd.DataFrame(data)
+
+   print("\n===== Arbitrage Details =====")
+   print(details_df)
+   print()
+
+#=====Telling if there is an arbitrage opportunity=====
+   if pricediff < 0:
+       
+       print("=====Arbitrage Opportunity Detected=====")
+       print(f"- Sell the market put at {market_put}")
+       print()
+       print(f"- Buy the synthetic put at {synthetic_put}") 
+       print(f"  To do so :")
+       print(f"  - Buy the call at {parameters['market_call_price']}")
+       print(f"  - Short the stock at {parameters['S_O']}")
+       print(f"  - Invest in a risk-free bond at pv_K = {parameters['S_K'] * math.exp(-parameters['rf'] * parameters['T'])}")
+        
+   elif pricediff > 0:
+
+        print("=====Arbitrage Opportunity Detected=====")
+        print(f"- Buy the market put at {market_put}")
+        print()
+        print(f"- Sell the synthetic put at {synthetic_put}")
+        print(f"  To do so :")
+        print(f"  - Sell the call at {parameters['market_call_price']}")
+        print(f"  - Buy the stock at {parameters['S_O']}")
+        print(f"  - Borrow at a risk-free rate equal to pv_K = {parameters['S_K'] * math.exp(-parameters['rf'] * parameters['T'])}")
+    
+   else:
+        print("No Arbitrage Opportunity: Synthetic and market put prices are in equilibrium.")
+
+
+
+def main():
+    #Ask_for_parameters_to_user 
+    parameters = parametersinputs()
+    #detect arbitrage
+    recommend(parameters)
+   # Calculate synthetic put for plotting
+    synthetic_put = calculate_synthetic_put(parameters)
+    market_put = parameters['market_put_price']
+
+    # Plot payoff comparison
+    plot_payoff(parameters)
+
+    # Plot synthetic put components
+    plot_synthetic_components(parameters, synthetic_put)
+
+    
+if __name__ == "__main__":
+    main()
