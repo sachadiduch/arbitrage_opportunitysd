@@ -15,8 +15,7 @@ This Python script helps detect arbitrage opportunities using the Call-Put Parit
    python arbitrage_opportunity.py
    ```
 4. Follow the prompts to:
-   - Choose between analyzing **call options** or **put options**.
-   - Enter the required parameters, such as option prices, strike price, risk-free rate, and time to maturity.
+   - Enter the required parameters.
 
 ## Parameters
 - **Market Call Price:** The market price of the call option (e.g., `3.00`).
@@ -40,7 +39,6 @@ rf                  0.10
 T                   0.25
 D                   0.00
 ```
-
 
 ## Output
 After running the script, you will receive:
