@@ -27,6 +27,21 @@ This Python script helps detect arbitrage opportunities using the Call-Put Parit
 - **T:** Time to maturity (in years, e.g., `0.25`).
 - **D:** Dividend yield (as a decimal, e.g., `0.00`).
 
+The output will provide user's inputs for clarity as follow:
+
+```
+===== Input Parameters =====
+                   Value
+market_call_price   3.00
+market_put_price    2.25
+S_O                31.00
+S_K                30.00
+rf                  0.10
+T                   0.25
+D                   0.00
+```
+
+
 ## Output
 After running the script, you will receive:
 - Detailed arbitrage analysis in a tabular format.
